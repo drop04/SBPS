@@ -4,47 +4,47 @@
 #include <chrono>
 #include <filesystem>
 
-#include "pipeline.h"
-#include "image_io.h"
-#include "stage1_segmentation.h"
-#include "stage2_saliency.h"
-#include "stage3_slicing.h"
-#include "stage4_entropy.h"
-#include "stage5_bitstream.h"
+#include "Header_Files/pipeline.h"
+#include "Header_Files/image_io.h"
+#include "Header_Files/stage1_segmentation.h"
+#include "Header_Files/stage2_saliency.h"
+#include "Header_Files/stage3_slicing.h"
+#include "Header_Files/stage4_entropy.h"
+#include "Header_Files/stage5_bitstream.h"
 
 using Clock = std::chrono::high_resolution_clock;
 static auto tic() { return Clock::now(); }
 static double toc(const Clock::time_point& t0) {
     return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
 }
+ 
+//  Encode pipeline 
+static void encode(const std::string& inputPNG, const std::string& outputSBPS, const std::string& debugDir = "") {
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Encode pipeline
-// ─────────────────────────────────────────────────────────────────────────────
-static void encode(const std::string& inputPNG, const std::string& outputSBPS,
-                   const std::string& debugDir = "") {
     auto T0 = tic();
     std::cout << "\n╔══════════════════════════════════════════╗\n";
     std::cout <<   "║  ENCODE: " << inputPNG << "\n";
     std::cout <<   "╚══════════════════════════════════════════╝\n\n";
 
     Image img = loadPNG(inputPNG);
-    std::cout << "[Input]   " << img.width << "×" << img.height << " RGB  ("
-              << (size_t)img.width * img.height * 3 << " bytes)\n\n";
-    if (!debugDir.empty()) std::filesystem::create_directories(debugDir);
+    std::cout << "[Input]   " << img.width << "×" << img.height << " RGB  (" << (size_t)img.width * img.height * 3 << " bytes)\n\n";
+    
+    if (!debugDir.empty()) 
+        std::filesystem::create_directories(debugDir);
 
     // Stage 1: segmentation
     auto t1 = tic();
     SegmentationMask seg = segment(img);
     std::cout << "          [" << toc(t1) << " ms]\n\n";
-    if (!debugDir.empty()) saveSegPNG(debugDir + "/seg.png", seg);
+    if (!debugDir.empty()) 
+        saveSegPNG(debugDir + "/seg.png", seg);
 
     // Stage 2: saliency + importance fusion -> 3 tiers
     auto t2 = tic();
     SaliencyMap sal = generateSaliency(img);
     ImportanceMap imp = fuseImportance(seg, sal);
     std::cout << "          [" << toc(t2) << " ms]\n\n";
-    if (!debugDir.empty()) {
+    if (!debugDir.empty()){
         saveSaliencyPNG(debugDir + "/saliency.png", sal);
         saveTierMapPNG(debugDir + "/tiermap.png", imp);
     }
@@ -54,39 +54,44 @@ static void encode(const std::string& inputPNG, const std::string& outputSBPS,
     ResidualPlanes rp = decorrelate(img);
     std::cout << "[Stage 3] Decorrelation: G / R-G / B-G, MED prediction, zig-zag residuals\n";
     std::cout << "          [" << toc(t3) << " ms]\n\n";
-    if (!debugDir.empty()) saveResidualPNG(debugDir + "/residual.png", rp);
+    if (!debugDir.empty()) 
+        saveResidualPNG(debugDir + "/residual.png", rp);
 
     {   // Cheap self-check of this stage before spending time on entropy coding
         bool ok = verifyLossless(img, reconstruct(rp));
         std::cout << "[Verify] Decorrelation round-trip lossless: " << (ok ? "✓ PASS" : "✗ FAIL") << "\n\n";
-        if (!ok) throw std::runtime_error("decorrelation is not invertible (bug)");
+        if(!ok) 
+            throw std::runtime_error("decorrelation is not invertible (bug)");
     }
 
     // Stage 4: context-modelled range coding
     auto t4 = tic();
     EncodedStream es = encodeStream(std::move(rp), imp.tier);
-    std::cout << "[Stage 4] Entropy coding: " << es.payload.size() << " payload bytes + "
-              << es.tierMapBytes.size() << " tier-map bytes\n";
+    std::cout << "[Stage 4] Entropy coding: " << es.payload.size() << " payload bytes + " << es.tierMapBytes.size() << " tier-map bytes\n";
     std::cout << "          [" << toc(t4) << " ms]\n\n";
 
     // Stage 5: container
     auto t5 = tic();
     const size_t modelledBytes = HEADER_BYTES + es.tierMapBytes.size() + es.payload.size();
     const bool useStored = STORED_HEADER_BYTES + img.data.size() <= modelledBytes;
-    if (useStored) writeStoredFile(outputSBPS, img.width, img.height, crc32(img.data), img.data);
-    else           writeCompressedFile(outputSBPS, img.width, img.height, crc32(img.data), es);
+
+    if (useStored) 
+        writeStoredFile(outputSBPS, img.width, img.height, crc32(img.data), img.data);
+    else           
+        writeCompressedFile(outputSBPS, img.width, img.height, crc32(img.data), es);
+
     std::cout << "[Stage 5] Written to " << outputSBPS << (useStored ? "  (stored mode)" : "") << "\n";
     std::cout << "          [" << toc(t5) << " ms]\n\n";
 
     printStats(img.width, img.height, es, outputSBPS, useStored);
     std::cout << "[Total encode time] " << toc(T0) << " ms\n\n";
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Decode pipeline
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+//  Decode pipeline 
 static void decode(const std::string& inputSBPS, const std::string& outputPNG) {
+
     auto T0 = tic();
+
     std::cout << "\n╔══════════════════════════════════════════╗\n";
     std::cout <<   "║  DECODE: " << inputSBPS << "\n";
     std::cout <<   "╚══════════════════════════════════════════╝\n\n";
@@ -98,7 +103,8 @@ static void decode(const std::string& inputSBPS, const std::string& outputPNG) {
     if (ds.stored) {
         img.width = ds.W; img.height = ds.H; img.channels = 3;
         img.data = std::move(ds.raw);
-    } else {
+    } 
+    else {
         ResidualPlanes rp;
         std::vector<uint8_t> tier;
         decodeStream(ds.tierMapBytes, ds.payload, ds.W, ds.H, rp, tier);
@@ -112,9 +118,7 @@ static void decode(const std::string& inputSBPS, const std::string& outputPNG) {
     std::cout << "[Total decode time] " << toc(T0) << " ms\n\n";
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  Main
-// ─────────────────────────────────────────────────────────────────────────────
 static int usage() {
     std::cerr << "Usage:\n"
               << "  compress encode <input.png> <output.sbps> [debug_dir]\n"
@@ -124,16 +128,18 @@ static int usage() {
 }
 
 int main(int argc, char** argv) {
-    if (argc < 2) return usage();
+    if (argc < 2) 
+        return usage();
+
     std::string mode = argv[1];
     try {
         if (mode == "encode" && argc >= 4) {
             encode(argv[2], argv[3], argc >= 5 ? argv[4] : "");
-
-        } else if (mode == "decode" && argc >= 4) {
+        } 
+        else if (mode == "decode" && argc >= 4) {
             decode(argv[2], argv[3]);
-
-        } else if (mode == "roundtrip" && argc >= 3) {
+        } 
+        else if (mode == "roundtrip" && argc >= 3) {
             namespace fs = std::filesystem;
             fs::path tmp = fs::temp_directory_path() / "sbps_roundtrip";
             fs::create_directories(tmp);
@@ -152,11 +158,14 @@ int main(int argc, char** argv) {
             std::cout << "║  Result: " << (lossless ? "✓ PERFECT LOSSLESS RECONSTRUCTION"
                                                     : "✗ MISMATCH — BUG IN PIPELINE") << " ║\n";
             std::cout << "╚══════════════════════════════════════════╝\n";
-            if (!lossless) return 1;
-        } else {
+            if (!lossless) 
+                return 1;
+        } 
+        else {
             return usage();
         }
-    } catch (const std::exception& e) {
+    } 
+    catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << "\n";
         return 2;
     }

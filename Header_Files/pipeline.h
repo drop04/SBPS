@@ -12,9 +12,7 @@
 #include <memory>
 #include <stdexcept>
 
-// ─────────────────────────────────────────────
 //  Constants
-// ─────────────────────────────────────────────
 static constexpr int BIT_DEPTH   = 8;
 static constexpr int NUM_PLANES  = 8;
 static constexpr int NUM_TIERS   = 3;
@@ -28,9 +26,7 @@ static constexpr float TIER2_THRESHOLD = 0.30f; // medium saliency
 static constexpr uint32_t MAX_DIM    = 65535;
 static constexpr uint64_t MAX_PIXELS = 1ull << 28;
 
-// ─────────────────────────────────────────────
 //  Core data structures
-// ─────────────────────────────────────────────
 
 // A single RGB image loaded from disk
 struct Image {
@@ -50,8 +46,12 @@ struct SaliencyMap {
     int width, height;
     std::vector<float> data;
 
-    float& at(int y, int x)       { return data[y * width + x]; }
-    const float& at(int y, int x) const { return data[y * width + x]; }
+    float& at(int y, int x){ 
+        return data[y * width + x]; 
+    }
+    const float& at(int y, int x) const { 
+        return data[y * width + x]; 
+    }
 };
 
 // Semantic segmentation mask (H×W uint8 class labels 0..255)
@@ -60,8 +60,12 @@ struct SegmentationMask {
     std::vector<uint8_t> labels;     // class per pixel
     std::vector<float>   classWeight;// importance weight per class
 
-    uint8_t& at(int y, int x)       { return labels[y * width + x]; }
-    const uint8_t& at(int y, int x) const { return labels[y * width + x]; }
+    uint8_t& at(int y, int x){ 
+        return labels[y * width + x]; 
+    }
+    const uint8_t& at(int y, int x) const{ 
+        return labels[y * width + x]; 
+    }
 };
 
 // Combined per-pixel importance [0,1]
@@ -70,15 +74,21 @@ struct ImportanceMap {
     std::vector<float> score;       // fused importance
     std::vector<uint8_t> tier;      // 1, 2, or 3
 
-    float& scoreAt(int y, int x)       { return score[y * width + x]; }
-    uint8_t& tierAt(int y, int x)      { return tier[y * width + x]; }
-    const uint8_t& tierAt(int y, int x) const { return tier[y * width + x]; }
+    float& scoreAt(int y, int x){ 
+        return score[y * width + x]; 
+    }
+    uint8_t& tierAt(int y, int x){ 
+        return tier[y * width + x]; 
+    }
+    const uint8_t& tierAt(int y, int x) const{ 
+        return tier[y * width + x]; 
+    }
 };
 
 // Prediction residuals, one byte per pixel per coded channel.
 // Residuals are zig-zag mapped so small errors have small magnitude and
-// therefore leave the high bit planes empty (that is what makes bit-plane
-// coding efficient).
+// therefore leave the high bit planes empty 
+
 struct ResidualPlanes {
     int width = 0, height = 0;
     std::array<std::vector<uint8_t>, NUM_CHANNELS> r;
