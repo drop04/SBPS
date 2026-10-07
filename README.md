@@ -12,7 +12,9 @@
 Predicts every pixel, slices the prediction errors into bit planes grouped by visual importance, and codes them with an adaptive range coder.
 **16–47% smaller than PNG on real photographs. Bit-exact on every image tested.**
 
-[Quick start](#quick-start) · [Results](#results) · [How it works](#how-it-works) · [File format](#file-format) · [Testing](#testing)
+<!-- [Quick start](#quick-start) · [Results](#results) · [How it works](#how-it-works) · [File format](#file-format) · [Testing](#testing) -->
+[Quick start](#quick-start) · [How it works](#how-it-works) · [File format](#file-format)
+
 
 </div>
 
