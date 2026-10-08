@@ -160,6 +160,21 @@ The encoder and decoder share **one templated code path**; contexts are computed
 
 ```text
 .
+├── main.cpp                     CLI: encode / decode / roundtrip
+├── Makefile
+└── Header_Files/
+    └── pipeline.h               shared types and constants
+    └── image_io.h               PNG I/O and debug-image writers
+    └── stage1_segmentation.h    k-means segmentation (stand-in)
+    └── stage2_saliency.h        saliency + importance fusion (stand-in)
+    └── stage3_slicing.h         colour transform, MED prediction, slice schedule, CRC-32
+    └── stage4_entropy.h         range coder, bit models, tier-map and bit-plane codecs
+    └── stage5_bitstream.h       file format, validation, statistics
+
+```
+
+<!-- ```text
+.
 ├── main.cpp                 CLI: encode / decode / roundtrip
 ├── pipeline.h               shared types and constants
 ├── image_io.h               PNG I/O and debug-image writers
@@ -170,7 +185,7 @@ The encoder and decoder share **one templated code path**; contexts are computed
 ├── stage5_bitstream.h       file format, validation, statistics
 ├── Makefile
 └── tests/                   fuzzer, benchmark, robustness checks
-```
+``` -->
 
 <!-- ## File format
 
