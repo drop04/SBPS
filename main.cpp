@@ -13,7 +13,11 @@
 #include "Header_Files/stage5_bitstream.h"
 
 using Clock = std::chrono::high_resolution_clock;
-static auto tic() { return Clock::now(); }
+
+static auto tic() { 
+    return Clock::now(); 
+}
+
 static double toc(const Clock::time_point& t0) {
     return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
 }
@@ -22,10 +26,9 @@ static double toc(const Clock::time_point& t0) {
 static void encode(const std::string& inputPNG, const std::string& outputSBPS, const std::string& debugDir = "") {
 
     auto T0 = tic();
-    std::cout << "\n╔══════════════════════════════════════════╗\n";
-    std::cout <<   "║  ENCODE: " << inputPNG << "\n";
-    std::cout <<   "╚══════════════════════════════════════════╝\n\n";
 
+    std::cout << std::endl <<  "ENCODE: " << inputPNG << std::endl;
+    
     Image img = loadPNG(inputPNG);
     std::cout << "[Input]   " << img.width << "×" << img.height << " RGB  (" << (size_t)img.width * img.height * 3 << " bytes)\n\n";
     
@@ -92,9 +95,8 @@ static void decode(const std::string& inputSBPS, const std::string& outputPNG) {
 
     auto T0 = tic();
 
-    std::cout << "\n╔══════════════════════════════════════════╗\n";
-    std::cout <<   "║  DECODE: " << inputSBPS << "\n";
-    std::cout <<   "╚══════════════════════════════════════════╝\n\n";
+    std::cout << std::endl <<   "  DECODE: " << inputSBPS << std::endl;
+    std::cout << std::endl;
 
     DeserializedStream ds = readCompressedFile(inputSBPS);
     std::cout << "[Stage 5] Read " << inputSBPS << " — " << ds.W << "×" << ds.H << "\n";
@@ -128,8 +130,9 @@ static int usage() {
 }
 
 int main(int argc, char** argv) {
-    if (argc < 2) 
+    if (argc < 2) {
         return usage();
+    }
 
     std::string mode = argv[1];
     try {
@@ -152,12 +155,12 @@ int main(int argc, char** argv) {
             Image original = loadPNG(argv[2]);
             Image decoded  = loadPNG(outPNG);
             bool lossless = verifyLossless(original, decoded);
-            std::cout << "╔══════════════════════════════════════════╗\n";
-            std::cout << "║  LOSSLESS VERIFICATION                    ║\n";
-            std::cout << "╠══════════════════════════════════════════╣\n";
-            std::cout << "║  Result: " << (lossless ? "✓ PERFECT LOSSLESS RECONSTRUCTION"
-                                                    : "✗ MISMATCH — BUG IN PIPELINE") << " ║\n";
-            std::cout << "╚══════════════════════════════════════════╝\n";
+
+            std::cout << std::endl << "  LOSSLESS VERIFICATION  " << std::endl;
+            std::cout << "  Result: " << (lossless ? "✓ PERFECT LOSSLESS RECONSTRUCTION"
+                                                   : "✗ MISMATCH — BUG IN PIPELINE");
+            std::cout << std::endl;
+
             if (!lossless) 
                 return 1;
         } 

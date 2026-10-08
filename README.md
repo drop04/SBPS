@@ -223,13 +223,13 @@ To benchmark your own images, drop PNGs into `tests/` and run `python3 tests/ben
 - **Blended predictors were rejected.** An adaptive blend of five predictors gained at most 0.7% on a noisy image and was up to 2× worse on gradients and hard edges.
 - **Adaptation rate barely matters.** Sweeping it from 30 to 250 moved results by under 0.2%.
 
-<!-- ## Limitations
+## Limitations
 
 - Tiers do not change quality (lossless), and there is no progressive decoder or lossy mode yet.
 - Segmentation and saliency are heuristic stand-ins, not trained models.
 - 8-bit RGB only: alpha is dropped, 16-bit is reduced, and metadata (ICC, EXIF) is not preserved.
 - Images with long exact repeats (some gradients, screenshots) can compress better with PNG.
-- Whole images are processed in memory. -->
+- Whole images are processed in memory.
 
 <!-- ## Roadmap
 

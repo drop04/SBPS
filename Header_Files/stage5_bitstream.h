@@ -1,21 +1,4 @@
-//  STAGE 5 — Bitstream container (.sbps, version 2)
-//
-//  Layout (all integers little-endian, written byte-by-byte so the format is
-//  independent of host endianness):
-//
-//    "SBP2"                       4   magic
-//    width, height                4+4
-//    crc32 of original RGB data   4
-//    tierMapBytes, payloadBytes   4+4
-//    tier map                     tierMapBytes
-//    residual payload             payloadBytes
-//
-//  v1 stored three raw int32 pixel-index tables (4 bytes per pixel — more
-//  than the raw image).  v2 stores the tier map as a context-coded label
-//  image, typically a fraction of a percent of the file.
-//
-//  Reading is defensive: every size is validated against the real file
-//  length, and the CRC detects corruption after decoding. 
+//  STAGE 5 — Bitstream container
 
 #pragma once
 #include "pipeline.h"
@@ -121,8 +104,11 @@ inline DeserializedStream readCompressedFile(const std::string& path) {
         if (STORED_HEADER_BYTES + (uint64_t)W * H * 3 != (uint64_t)size)
             throw std::runtime_error("File is truncated or corrupt (size mismatch)");
 
-        ds.stored = true; ds.W = (int)W; ds.H = (int)H;
+        ds.stored = true; 
+        ds.W = (int)W; 
+        ds.H = (int)H;
         ds.raw.assign(buf.begin() + STORED_HEADER_BYTES, buf.end());
+
         return ds;
     }
 
@@ -142,9 +128,11 @@ inline DeserializedStream readCompressedFile(const std::string& path) {
     if (HEADER_BYTES + tmLen + plLen != (uint64_t)size)
         throw std::runtime_error("File is truncated or corrupt (size mismatch)");
 
-    ds.W = (int)W; ds.H = (int)H;
+    ds.W = (int)W; 
+    ds.H = (int)H;
     ds.tierMapBytes.assign(buf.begin() + HEADER_BYTES, buf.begin() + HEADER_BYTES + tmLen);
     ds.payload.assign(buf.begin() + HEADER_BYTES + tmLen, buf.end());
+
     return ds;
 }
 
@@ -158,30 +146,28 @@ inline void printStats(int W, int H, const EncodedStream& es, const std::string&
     for (int t = 1; t <= NUM_TIERS; ++t) 
         totalBits += es.tierBits[t];
 
-    std::cout << "══════════════════════════════════════════\n";
-    std::cout << "  COMPRESSION SUMMARY\n";
-    std::cout << "══════════════════════════════════════════\n";
-    std::cout << "  Image size       : " << W << " × " << H << "  (" << raw << " bytes raw)\n";
-    std::cout << "  File size        : " << file << " bytes\n";
+    std::cout << std::endl << "  COMPRESSION SUMMARY\n" << std::endl;
+    std::cout << "  Image size       : " << W << " × " << H << "  (" << raw << " bytes raw)" << std::endl;
+    std::cout << "  File size        : " << file << " bytes" << std::endl;
     std::cout << std::fixed << std::setprecision(3);
-    std::cout << "  Compression ratio: " << ratio << "x   ("
-              << (8.0 * file / ((double)W * H)) << " bits/pixel)\n";
+    std::cout << "  Compression ratio: " << ratio << "x   (" << (8.0 * file / ((double)W * H)) << " bits/pixel)" << std::endl;
 
     if (stored) 
-        std::cout << "  Mode             : STORED (image is incompressible; modelled coding would be larger)\n";
+        std::cout << "  Mode             : STORED (image is incompressible; modelled coding would be larger)" << std::endl;
 
-    std::cout << "  Tier map         : " << es.tierMapBytes.size() << " bytes\n";
-    std::cout << "  Residual payload : " << es.payload.size() << " bytes\n";
+    std::cout << "  Tier map         : " << es.tierMapBytes.size() << " bytes" << std::endl;
+    std::cout << "  Residual payload : " << es.payload.size() << " bytes" << std::endl;
 
     for (int t = 1; t <= NUM_TIERS; ++t) {
         double bytes = es.tierBits[t] / 8.0;
         double bpp = es.tierPixels[t] ? es.tierBits[t] / (double)es.tierPixels[t] / 3.0 : 0.0;
+
         std::cout << "  Tier " << t << " payload  : " << std::setw(9) << std::setprecision(0)
                   << bytes << " bytes (" << std::setprecision(1)
                   << (totalBits > 0 ? 100.0 * es.tierBits[t] / totalBits : 0.0) << "% of payload, "
                   << std::setprecision(2) << bpp << " bits/sample, "
-                  << es.tierPixels[t] << " px)\n";
+                  << es.tierPixels[t] << " px)" << std::endl;
     }
     
-    std::cout << "══════════════════════════════════════════\n\n";
+    std::cout << std::endl << std::endl;
 }

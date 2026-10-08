@@ -1,21 +1,5 @@
 //  STAGE 4 — Context-modelled binary range coding
-//
-//  Changes from v1:
-//   * Standard 32-bit carry-less binary range coder with 16-bit probabilities
-//     (replaces the hand-rolled 64-bit coder).
-//   * ONE code path for encoder and decoder (templated on `Ops`).  The
-//     context for every bit is computed only from a `known` buffer that holds
-//     exactly the bits already coded, so encoder/decoder symmetry holds by
-//     construction rather than by careful duplication.
-//   * 2D contexts instead of "previous 5 bits in the slice":
-//        - how significant is this pixel already (higher planes)
-//        - how large are the W / N / NW / NE neighbours (higher planes)
-//        - the W and N neighbours' bit in the *current* plane (if coded yet)
-//        - the previous channel's value at this pixel
-//   * Models are per (channel, plane), shared across tiers (per-tier models are
-//     available via -DTIERED_MODELS but measured ~1% worse).
-//   * The tier map is coded compactly (context-coded labels) instead of being
-//     stored as 4 bytes per pixel.
+
 
 #pragma once
 #include "pipeline.h"
@@ -39,7 +23,9 @@ struct BitModel {
         static bool init = false;
 
         if (!init) {
-            for (int i = 0; i <= ADAPT_LIMIT; ++i) t[i] = (int)(65536.0 / (i + 1.6));
+            for (int i = 0; i <= ADAPT_LIMIT; ++i) 
+                t[i] = (int)(65536.0 / (i + 1.6));
+
             init = true;
         }
 
@@ -106,12 +92,19 @@ class RangeDecoder {
 
     public:
         RangeDecoder(const uint8_t* b, size_t len) : buf(b), n(len) {
-            for (int i = 0; i < 4; ++i) x = (x << 8) | next();
+            for (int i = 0; i < 4; ++i) {
+                x = (x << 8) | next();
+            }
         }
+
         int decode(uint32_t p1) {
             uint32_t xmid = x1 + (uint32_t)(((uint64_t)(x2 - x1) * p1) >> 16);
             int bit = x <= xmid;
-            if (bit) x2 = xmid; else x1 = xmid + 1;
+            if (bit) 
+                x2 = xmid; 
+            else 
+                x1 = xmid + 1;
+
             while (((x1 ^ x2) & 0xFF000000u) == 0) {
                 x1 <<= 8;
                 x2 = (x2 << 8) | 255;
@@ -163,7 +156,7 @@ void codeTierMap(Ops& ops, std::vector<uint8_t>& tier, int W, int H) {
         for (int x = 0; x < W; ++x) {
             size_t i = (size_t)y * W + x;
             int ctx = ((lab(x - 1, y) * 3 + lab(x, y - 1)) * 3 + lab(x - 1, y - 1)) * 3 + lab(x + 1, y - 1);
-            int l = tier[i] - 1;   // meaningful for the encoder only
+            int l = tier[i] - 1;   // only for encoder
             int b0 = ops.code(m0[ctx], l > 0);
             int b1 = b0 ? ops.code(m1[ctx], l > 1) : 0;
             tier[i] = (uint8_t)(b0 + b1 + 1);
@@ -278,8 +271,7 @@ inline EncodedStream encodeStream(ResidualPlanes rp, std::vector<uint8_t> tier) 
     return es;
 }
 
-inline void decodeStream(const std::vector<uint8_t>& tierMapBytes, const std::vector<uint8_t>& payload, int W, int H,
-                         ResidualPlanes& rp, std::vector<uint8_t>& tier) {
+inline void decodeStream(const std::vector<uint8_t>& tierMapBytes, const std::vector<uint8_t>& payload, int W, int H, ResidualPlanes& rp, std::vector<uint8_t>& tier) {
 
     tier.assign((size_t)W * H, 1);
 

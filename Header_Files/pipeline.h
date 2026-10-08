@@ -13,10 +13,10 @@
 #include <stdexcept>
 
 //  Constants
-static constexpr int BIT_DEPTH   = 8;
-static constexpr int NUM_PLANES  = 8;
-static constexpr int NUM_TIERS   = 3;
-static constexpr int NUM_CHANNELS= 3;   // coded channels: G, R-G, B-G
+static constexpr int BIT_DEPTH    = 8;
+static constexpr int NUM_PLANES   = 8;
+static constexpr int NUM_TIERS    = 3;
+static constexpr int NUM_CHANNELS = 3;   // coded channels: G, R-G, B-G
 
 // Tier importance thresholds (tunable)
 static constexpr float TIER1_THRESHOLD = 0.65f; // high saliency
@@ -36,9 +36,11 @@ struct Image {
     uint8_t& at(int y, int x, int c) {
         return data[(y * width + x) * channels + c];
     }
+
     const uint8_t& at(int y, int x, int c) const {
         return data[(y * width + x) * channels + c];
     }
+
 };
 
 // One saliency map  (H×W floats in [0,1])
@@ -49,9 +51,11 @@ struct SaliencyMap {
     float& at(int y, int x){ 
         return data[y * width + x]; 
     }
+
     const float& at(int y, int x) const { 
         return data[y * width + x]; 
     }
+
 };
 
 // Semantic segmentation mask (H×W uint8 class labels 0..255)
@@ -63,9 +67,11 @@ struct SegmentationMask {
     uint8_t& at(int y, int x){ 
         return labels[y * width + x]; 
     }
+
     const uint8_t& at(int y, int x) const{ 
         return labels[y * width + x]; 
     }
+
 };
 
 // Combined per-pixel importance [0,1]
@@ -77,12 +83,15 @@ struct ImportanceMap {
     float& scoreAt(int y, int x){ 
         return score[y * width + x]; 
     }
+
     uint8_t& tierAt(int y, int x){ 
         return tier[y * width + x]; 
     }
+
     const uint8_t& tierAt(int y, int x) const{ 
         return tier[y * width + x]; 
     }
+    
 };
 
 // Prediction residuals, one byte per pixel per coded channel.

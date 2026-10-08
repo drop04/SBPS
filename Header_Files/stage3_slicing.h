@@ -1,20 +1,4 @@
 //  STAGE 3 — Decorrelation + 2D Bit-Plane Slicing
-//
-//  v1 sliced the raw pixel bytes.  Raw bit planes of a natural image are
-//  nearly incompressible below the top 2-3 planes, so v1 expanded the data.
-//  v2 first removes the redundancy between neighbouring pixels and between
-//  channels, and only then slices:
-//
-//    1. Reversible colour transform:   G,  R-G (mod 256),  B-G (mod 256)
-//    2. MED (LOCO-I / JPEG-LS) predictor per channel, causal neighbours only
-//    3. Residual  e = (x - pred) mod 256, reinterpreted as signed, then
-//       zig-zag mapped so |e| small  ->  value small  ->  high planes all 0
-//    4. The residual bytes are what get cut into bit planes (MSB first).
-//
-//  The slice grid is still  tier x bit-plane x channel  (72 slices).  The
-//  slices are scheduled plane-major so every pixel's more significant planes
-//  are known (to encoder AND decoder) before its less significant planes are
-//  coded — that is what the entropy coder's contexts rely on.
 
 #pragma once
 #include "pipeline.h"
@@ -24,6 +8,7 @@
 inline uint32_t crc32(const std::vector<uint8_t>& d) {
     static uint32_t table[256];
     static bool init = false;
+
     if (!init) {
 
         for (uint32_t i = 0; i < 256; ++i) {
@@ -37,10 +22,12 @@ inline uint32_t crc32(const std::vector<uint8_t>& d) {
 
         init = true;
     }
+
     uint32_t c = 0xFFFFFFFFu;
 
-    for (uint8_t b : d) 
+    for (uint8_t b : d) {
         c = table[(c ^ b) & 0xFF] ^ (c >> 8);
+    }
 
     return c ^ 0xFFFFFFFFu;
 }
@@ -165,8 +152,9 @@ inline std::vector<SliceId> sliceSchedule() {
 
     for (int p = 1; p <= NUM_PLANES; ++p){
         for (int c = 0; c < NUM_CHANNELS; ++c){
-            for (int t = 1; t <= NUM_TIERS; ++t)
+            for (int t = 1; t <= NUM_TIERS; ++t){
                 s.push_back({p, c, t});
+            }
         }
     }
     
@@ -183,8 +171,9 @@ tierPixelLists(const std::vector<uint8_t>& tier) {
     for (int i = 0; i < (int)tier.size(); ++i) {
         int t = tier[i];
 
-        if (t < 1 || t > NUM_TIERS) 
+        if (t < 1 || t > NUM_TIERS) {
             throw std::runtime_error("invalid tier value");
+        }
 
         L[t].push_back(i);
     }
