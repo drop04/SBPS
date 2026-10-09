@@ -3,6 +3,17 @@ out.sbps
 image.png
 sample_out.png
 image_fixed.png
+# tests/big_768x960.png
+# tests/extremes.png
+# tests/flat.png
+# tests/gradient.png
+# tests/gray.png
+# tests/noise.png
+# tests/odd_37x53.png
+# tests/photo_like.png
+# tests/rgba.png
+# tests/tiny_1x1.png
+# tests/stress_test
 tests/
 sample_images/
 debug/

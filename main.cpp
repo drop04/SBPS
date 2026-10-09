@@ -3,6 +3,7 @@
 #include <string>
 #include <chrono>
 #include <filesystem>
+#include <cstdlib>
 
 #include "Header_Files/pipeline.h"
 #include "Header_Files/image_io.h"
@@ -120,6 +121,24 @@ static void decode(const std::string& inputSBPS, const std::string& outputPNG) {
     std::cout << "[Total decode time] " << toc(T0) << " ms\n\n";
 }
 
+static std::string toPNG(const std::string& inputPath){
+    std::filesystem::path input = inputPath;
+
+    if(!std::filesystem::exists(input)){
+        std::cerr << "Invalid Input !!" << std::endl << "Please check File Path" << std::endl;
+        return "1";
+    }
+
+    std::filesystem::path output = input;
+    output.replace_extension(".png");
+
+    std::string cmd = "python3 -c \"from PIL import Image; Image.open('" + std::string(input) 
+                       + "').convert('RGB').save('" + std::string(output) + "')\"";
+    
+    system(cmd.c_str());
+    return std::string(output);
+}
+
 //  Main
 static int usage() {
     std::cerr << "Usage:\n"
@@ -137,7 +156,9 @@ int main(int argc, char** argv) {
     std::string mode = argv[1];
     try {
         if (mode == "encode" && argc >= 4) {
-            encode(argv[2], argv[3], argc >= 5 ? argv[4] : "");
+            std::string output = toPNG(argv[2]);
+
+            encode(output, argv[3], argc >= 5 ? argv[4] : "");
         } 
         else if (mode == "decode" && argc >= 4) {
             decode(argv[2], argv[3]);
@@ -148,11 +169,13 @@ int main(int argc, char** argv) {
             fs::create_directories(tmp);
             std::string sbps = (tmp / "rt.sbps").string();
             std::string outPNG = (tmp / "rt_decoded.png").string();
+            
+            std::string output = toPNG(argv[2]);
 
-            encode(argv[2], sbps, (tmp / "debug").string());
+            encode(output, sbps, (tmp / "debug").string());
             decode(sbps, outPNG);
 
-            Image original = loadPNG(argv[2]);
+            Image original = loadPNG(std::string(output));
             Image decoded  = loadPNG(outPNG);
             bool lossless = verifyLossless(original, decoded);
 
@@ -161,8 +184,9 @@ int main(int argc, char** argv) {
                                                    : "✗ MISMATCH — BUG IN PIPELINE");
             std::cout << std::endl;
 
-            if (!lossless) 
+            if (!lossless) {
                 return 1;
+            }
         } 
         else {
             return usage();
