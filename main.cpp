@@ -121,12 +121,33 @@ static void decode(const std::string& inputSBPS, const std::string& outputPNG) {
     std::cout << "[Total decode time] " << toc(T0) << " ms\n\n";
 }
 
+// converts the input image to PNG 
 static std::string toPNG(const std::string& inputPath){
     std::filesystem::path input = inputPath;
 
     if(!std::filesystem::exists(input)){
         std::cerr << "Invalid Input !!" << std::endl << "Please check File Path" << std::endl;
-        return "1";
+        return "";
+    }
+
+    std::string cmd1 = "file --mime-type -b " + inputPath;
+    FILE* pipe = popen(cmd1.c_str(), "r");
+    if(!pipe){
+        std::cerr << "Failed to execute --mime-type command" << std::endl;
+        return "";
+    }
+    char buffer[150];
+    std::string result = "";
+
+    while(fgets(buffer, sizeof(buffer), pipe) != nullptr){
+        result += buffer;
+    }
+
+    pclose(pipe);
+
+    if(result.find("Image/") != 0){
+        std::cerr << "Input is NOT AN IMAGE" << std::endl;
+        return "";
     }
 
     std::filesystem::path output = input;
