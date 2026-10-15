@@ -37,7 +37,7 @@ The project is a working, tested research prototype:
 
 ```bash
 git clone https://github.com/drop04/SBPS.git
-cd sbps
+cd SBPS
 make
 ./compress roundtrip photo.png
 ```
