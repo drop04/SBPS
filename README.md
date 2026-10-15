@@ -36,7 +36,7 @@ The project is a working, tested research prototype:
 ## Quick start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/sbps.git
+git clone https://github.com/drop04/SBPS.git
 cd sbps
 make
 ./compress roundtrip photo.png
